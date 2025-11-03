@@ -209,6 +209,6 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 Built with ❤️ for a safer internet
 
-[Report Bug](https://github.com/NoCodeNode/X/issues) · [Request Feature](https://github.com/NoCodeNode/X/issues) · [Documentation](https://github.com/NoCodeNode/X/wiki)
+[Report Bug](https://github.com/NoCodeNode/Samometer-Next/issues) · [Request Feature](https://github.com/NoCodeNode/Samometer-Next/issues) · [Documentation](https://github.com/NoCodeNode/Samometer-Next/wiki)
 
 </div>
