@@ -60,8 +60,8 @@ Scamometer is a powerful Chrome extension that analyzes websites in real-time to
 ### Developer Mode (Current)
 1.  **Clone this repository:**
     ```bash
-    git clone https://github.com/NoCodeNode/Samometer-Next.git
-    cd Samometer-Next
+    git clone https://github.com/NoCodeNode/Scamometer-Next.git
+    cd Scamometer-Next
     ```
 2.  Open `chrome://extensions/` in Chrome
 3.  Enable **Developer Mode** (toggle in top-right)
@@ -209,6 +209,6 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 Built with ❤️ for a safer internet
 
-[Report Bug](https://github.com/NoCodeNode/Samometer-Next/issues) · [Request Feature](https://github.com/NoCodeNode/Samometer-Next/issues) · [Documentation](https://github.com/NoCodeNode/Samometer-Next/wiki)
+[Report Bug](https://github.com/NoCodeNode/Scamometer-Next/issues) · [Request Feature](https://github.com/NoCodeNode/Scamometer-Next/issues) · [Documentation](https://github.com/NoCodeNode/Scamometer-Next/wiki)
 
 </div>
