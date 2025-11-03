@@ -1,0 +1,45 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#16a34a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#eab308;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="56" fill="#0f172a" stroke="#1f2937" stroke-width="3"/>
+  
+  <!-- Gauge arc -->
+  <path d="M 20 64 A 44 44 0 0 1 108 64" 
+        stroke="url(#gaugeGradient)" 
+        stroke-width="12" 
+        fill="none" 
+        stroke-linecap="round"/>
+  
+  <!-- Center circle -->
+  <circle cx="64" cy="64" r="8" fill="#06b6d4"/>
+  
+  <!-- Needle -->
+  <line x1="64" y1="64" x2="64" y2="32" 
+        stroke="#e2e8f0" 
+        stroke-width="3" 
+        stroke-linecap="round"
+        transform="rotate(45 64 64)"/>
+  
+  <!-- Flask/Science icon overlay -->
+  <path d="M 50 44 L 50 32 L 78 32 L 78 44 L 72 60 L 72 70 C 72 74 68 78 64 78 C 60 78 56 74 56 70 L 56 60 Z" 
+        fill="none" 
+        stroke="#06b6d4" 
+        stroke-width="2.5"/>
+  <circle cx="64" cy="66" r="3" fill="#06b6d4" opacity="0.6"/>
+  <circle cx="58" cy="62" r="2" fill="#06b6d4" opacity="0.4"/>
+  <circle cx="70" cy="62" r="2" fill="#06b6d4" opacity="0.4"/>
+  
+  <!-- Shield outline for security -->
+  <path d="M 64 86 L 56 82 C 56 82 52 70 52 64 C 52 64 56 58 64 58 C 72 58 76 64 76 64 C 76 70 72 82 72 82 Z" 
+        fill="none" 
+        stroke="#16a34a" 
+        stroke-width="2" 
+        opacity="0.7"/>
+</svg>
