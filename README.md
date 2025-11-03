@@ -66,7 +66,7 @@ Scamometer is a powerful Chrome extension that analyzes websites in real-time to
 2.  Open `chrome://extensions/` in Chrome
 3.  Enable **Developer Mode** (toggle in top-right)
 4.  Click **Load unpacked** and select this folder
-5.  Get a free API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+5.  Get a free API key from [Google AI Studio](https://aistudio.google.com/app/api-keys)
 6.  Open **Options** and add your API key
 
 ## 🧠 How It Works
