@@ -2,7 +2,7 @@
 
 **Best-in-class browser extension for detecting phishing and scam websites using DNS, RDAP, and Gemini AI analysis.**
 
-Scamometer is a powerful Chrome extension that analyzes websites in real-time to help you identify suspicious or deceptive pages. With a beautiful modern UI, comprehensive features, and advanced AI analysis, it's your first line of defense against online threats.
+Scamometer is a powerful Chrome extension that analyzes websites in real-time to help you identify suspicious or deceptive pages. With a beautiful modern UI, comprehensive features, and advanced AI[...]
 
 ## ✨ Key Features
 
@@ -45,7 +45,7 @@ Scamometer is a powerful Chrome extension that analyzes websites in real-time to
   - Cached results for faster performance
 
 ### 🛠️ Advanced Settings
-- **Multiple AI Models** - Choose between Gemini Flash and Pro
+- **Multiple AI Models** - Choose between Gemini 2.5 Pro, Flash, and Flash-Lite
 - **Storage Management** - View and manage cached data
 - **Diagnostic Tools** - Test DNS and RDAP connections
 - **Statistics Dashboard** - Track storage usage and scan counts
@@ -131,11 +131,11 @@ Scamometer is a powerful Chrome extension that analyzes websites in real-time to
 ## 🔧 Configuration
 
 ### Available AI Models
-| Model | Speed | Accuracy | Best For |
-|-------|-------|----------|----------|
-| `gemini-2.5-flash-preview-09-2025` | ⚡⚡⚡ | ⭐⭐⭐ | Recommended |
-| `gemini-1.5-flash` | ⚡⚡⚡ | ⭐⭐ | Fastest |
-| `gemini-1.5-pro` | ⚡⚡ | ⭐⭐⭐⭐ | Most thorough |
+| Model                   | Speed  | Accuracy | Best For                             |
+|-------------------------|--------|----------|--------------------------------------|
+| `gemini-2.5-pro`        | ⚡⚡   | ⭐⭐⭐⭐  | Most thorough analysis               |
+| `gemini-2.5-flash`      | ⚡⚡⚡  | ⭐⭐⭐   | Everyday protection (Recommended)    |
+| `gemini-2.5-flash-lite` | ⚡⚡⚡⚡ | ⭐⭐     | Maximum speed                        |
 
 ### Risk Score Interpretation
 - **0-30** 🟢 Low Risk - Site appears legitimate
@@ -209,6 +209,6 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 Built with ❤️ for a safer internet
 
-[Report Bug](https://github.com/NoCodeNode/Scamometer-Next/issues) · [Request Feature](https://github.com/NoCodeNode/Scamometer-Next/issues) · [Documentation](https://github.com/NoCodeNode/Scamometer-Next/wiki)
+[Report Bug](https://github.com/NoCodeNode/Scamometer-Next/issues) · [Request Feature](https://github.com/NoCodeNode/Scamometer-Next/issues) · [Documentation](https://github.com/NoCodeNode/Scamometer-Next/blob/main/README.md)
 
 </div>
