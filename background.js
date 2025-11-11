@@ -270,7 +270,8 @@ async function runAnalysis(tabId, url, { reason } = {}) {
 
   // Store analysis in chrome.storage.local
   const key = storageKey(url);
-  await chrome.storage.local.set({ [key]: { when: Date.now(), url, ai, raw: payload, dnsResults, rdap } });
+  const analysisResult = { when: Date.now(), url, ai, raw: payload, dnsResults, rdap };
+  await chrome.storage.local.set({ [key]: analysisResult });
 
   // Update badge with final score
   await setBadgeForScore(ai.scamometer);
@@ -283,6 +284,29 @@ async function runAnalysis(tabId, url, { reason } = {}) {
   try {
     chrome.runtime.sendMessage({ type: 'analysis_complete', tabId, score: ai.scamometer });
   } catch {}
+  
+  // Send webhook notification for single URL analysis (if not part of batch)
+  if (reason !== 'batch') {
+    try {
+      const { webhookEnabled = false } = await chrome.storage.local.get({ webhookEnabled: false });
+      if (webhookEnabled) {
+        await sendWebhookNotification({
+          total: 1,
+          completed: 1,
+          failed: 0,
+          pending: 0,
+          results: [{
+            url: url,
+            status: 'completed',
+            result: analysisResult,
+            screenshot: null
+          }]
+        });
+      }
+    } catch (e) {
+      console.error('Webhook notification failed for single URL:', e);
+    }
+  }
 }
 
 // Helper: fetch with timeout

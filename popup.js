@@ -80,7 +80,6 @@ function showDisabledState() {
   document.getElementById('navMenu').style.display = 'block';
   document.getElementById('disabledState').style.display = 'block';
 }
-}
 
 async function refresh() {
   const { apiKey } = await chrome.storage.local.get({ apiKey: null });

@@ -7,7 +7,7 @@
   "homepage_url": "https://arnabmandal.com",
   "action": {
     "default_title": "Scamometer",
-    "default_popup": "popup-tabs.html",
+    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
