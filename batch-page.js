@@ -353,11 +353,49 @@ function generateInteractiveReport() {
   const mediumRisk = completed.filter(r => r.result.ai?.scamometer >= 40 && r.result.ai?.scamometer < 75).length;
   const lowRisk = completed.filter(r => r.result.ai?.scamometer < 40).length;
   
-  // Use relative paths for screenshots (they're in the same folder)
-  const resultsWithScreenshots = batchResults.map(r => ({
-    ...r,
-    screenshotFilename: r.screenshot?.filename || null
-  }));
+  const escapeHtml = (s) => String(s || '').replace(/[&<>"']/g, m =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  
+  // Generate table rows
+  const tableRows = batchResults.map((result, index) => {
+    const score = result.result?.ai?.scamometer || 0;
+    const verdict = result.result?.ai?.verdict || (result.status === 'failed' ? 'Failed' : 'N/A');
+    const positives = result.result?.ai?.positives || [];
+    const negatives = result.result?.ai?.negatives || [];
+    const timestamp = result.screenshot?.timestamp || new Date().toISOString();
+    const dateFormatted = new Date(timestamp).toLocaleString();
+    const sha256 = result.screenshot?.hash || 'N/A';
+    const screenshotFile = result.screenshot?.filename || null;
+    
+    const scoreClass = score >= 75 ? 'high' : (score >= 40 ? 'medium' : 'low');
+    const scoreColor = score >= 75 ? '#ef4444' : (score >= 40 ? '#f59e0b' : '#10b981');
+    
+    return `
+      <tr class="result-row ${scoreClass}">
+        <td class="url-cell">${escapeHtml(result.url)}</td>
+        <td class="date-cell">${escapeHtml(dateFormatted)}</td>
+        <td class="screenshot-cell">
+          ${screenshotFile ? `
+            <button class="view-btn" onclick="toggleScreenshot(${index})">👁️ View</button>
+            <div id="screenshot-${index}" class="screenshot-modal" style="display:none;">
+              <img src="./${screenshotFile}" alt="Screenshot" style="max-width:100%; height:auto; border-radius:8px;">
+            </div>
+          ` : '<span class="na">No screenshot</span>'}
+        </td>
+        <td class="hash-cell"><code>${escapeHtml(sha256.substring(0, 12))}...</code></td>
+        <td class="score-cell">
+          <span class="score-badge ${scoreClass}">${Math.round(score)}</span>
+        </td>
+        <td class="verdict-cell">${escapeHtml(verdict)}</td>
+        <td class="indicators-cell">
+          ${positives.length > 0 ? `<span class="pos-count">✓ ${positives.length}</span>` : '<span class="na">0</span>'}
+        </td>
+        <td class="indicators-cell">
+          ${negatives.length > 0 ? `<span class="neg-count">✗ ${negatives.length}</span>` : '<span class="na">0</span>'}
+        </td>
+      </tr>
+    `;
+  }).join('');
   
   return `<!DOCTYPE html>
 <html lang="en">
@@ -372,559 +410,369 @@ function generateInteractiveReport() {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
-      padding: 40px 20px;
+      padding: 20px;
     }
     
     .container {
-      max-width: 1400px;
+      max-width: 1600px;
       margin: 0 auto;
       background: white;
-      border-radius: 24px;
+      border-radius: 16px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       overflow: hidden;
-      animation: slideIn 0.5s ease;
-    }
-    
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
     }
     
     .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 60px 40px;
+      padding: 40px;
       text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-      animation: rotate 20s linear infinite;
-    }
-    
-    @keyframes rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    
-    .header-content {
-      position: relative;
-      z-index: 1;
     }
     
     .header h1 {
-      font-size: 48px;
-      margin-bottom: 16px;
-      text-shadow: 0 2px 20px rgba(0,0,0,0.2);
+      font-size: 36px;
+      margin-bottom: 8px;
     }
     
     .header p {
-      opacity: 0.95;
-      font-size: 18px;
-      font-weight: 500;
+      opacity: 0.9;
+      font-size: 16px;
     }
     
-    .export-bar {
-      background: #f8f9fa;
-      padding: 20px 40px;
-      border-bottom: 1px solid #e5e7eb;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-    
-    .export-btn {
-      padding: 12px 24px;
-      border-radius: 12px;
-      border: none;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-    
-    .export-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-    }
-    
-    .stats-container {
+    .summary-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 24px;
-      padding: 40px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 30px;
       background: #f8f9fa;
+      border-bottom: 2px solid #e5e7eb;
     }
     
-    .stat-card {
+    .card {
       background: white;
-      padding: 32px;
-      border-radius: 20px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      padding: 24px;
+      border-radius: 12px;
       text-align: center;
-      transition: all 0.3s;
-      animation: fadeInUp 0.5s ease forwards;
-      opacity: 0;
+      border: 2px solid #e5e7eb;
     }
     
-    @keyframes fadeInUp {
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .stat-card:nth-child(1) { animation-delay: 0.1s; }
-    .stat-card:nth-child(2) { animation-delay: 0.2s; }
-    .stat-card:nth-child(3) { animation-delay: 0.3s; }
-    .stat-card:nth-child(4) { animation-delay: 0.4s; }
-    
-    .stat-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.12);
-    }
-    
-    .stat-value {
-      font-size: 56px;
+    .card-value {
+      font-size: 36px;
       font-weight: 800;
-      margin-bottom: 12px;
-      background: linear-gradient(135deg, var(--color-start), var(--color-end));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      margin-bottom: 8px;
     }
     
-    .stat-card:nth-child(1) { --color-start: #667eea; --color-end: #764ba2; }
-    .stat-card:nth-child(2) { --color-start: #10b981; --color-end: #059669; }
-    .stat-card:nth-child(3) { --color-start: #ef4444; --color-end: #dc2626; }
-    .stat-card:nth-child(4) { --color-start: #f59e0b; --color-end: #d97706; }
+    .card.total .card-value { color: #667eea; }
+    .card.success .card-value { color: #10b981; }
+    .card.failed .card-value { color: #ef4444; }
+    .card.avg .card-value { color: #f59e0b; }
     
-    .stat-label {
+    .card-label {
       color: #6b7280;
       font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
       font-weight: 600;
-    }
-    
-    .chart-section {
-      padding: 40px;
-      background: white;
-    }
-    
-    .section-title {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 32px;
-      color: #1f2937;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
-    .bar-chart {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-around;
-      height: 350px;
-      background: #f8f9fa;
-      border-radius: 20px;
-      padding: 32px;
-      gap: 24px;
-    }
-    
-    .bar-wrapper {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-    }
-    
-    .bar-value {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--bar-color);
-    }
-    
-    .bar-column {
-      width: 100%;
-      max-width: 150px;
-      background: linear-gradient(180deg, var(--bar-color), var(--bar-color-dark));
-      border-radius: 12px 12px 0 0;
-      position: relative;
-      transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-    }
-    
-    .bar-wrapper:nth-child(1) { --bar-color: #10b981; --bar-color-dark: #059669; }
-    .bar-wrapper:nth-child(2) { --bar-color: #f59e0b; --bar-color-dark: #d97706; }
-    .bar-wrapper:nth-child(3) { --bar-color: #ef4444; --bar-color-dark: #dc2626; }
-    
-    .bar-label {
-      font-weight: 700;
-      color: #6b7280;
-      font-size: 16px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     
-    .results-section {
-      padding: 40px;
+    .export-bar {
       background: white;
-    }
-    
-    .result-card {
-      background: #f8f9fa;
-      border-radius: 20px;
-      padding: 32px;
-      margin-bottom: 24px;
-      border-left: 6px solid var(--border-color);
-      transition: all 0.3s;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .result-card:hover {
-      transform: translateX(8px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    }
-    
-    .result-card.low { --border-color: #10b981; }
-    .result-card.medium { --border-color: #f59e0b; }
-    .result-card.high { --border-color: #ef4444; }
-    
-    .result-header {
+      padding: 20px 30px;
+      border-bottom: 2px solid #e5e7eb;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-      gap: 20px;
-    }
-    
-    .result-info {
-      flex: 1;
-      min-width: 0;
-    }
-    
-    .result-url {
-      font-weight: 700;
-      color: #1f2937;
-      font-size: 18px;
-      margin-bottom: 8px;
-      word-break: break-all;
-    }
-    
-    .result-score {
-      font-size: 48px;
-      font-weight: 800;
-      text-align: center;
-      min-width: 120px;
-    }
-    
-    .result-score.low { color: #10b981; }
-    .result-score.medium { color: #f59e0b; }
-    .result-score.high { color: #ef4444; }
-    
-    .result-details {
-      color: #6b7280;
-      line-height: 1.8;
-      font-size: 15px;
-    }
-    
-    .result-details strong {
-      color: #374151;
-      font-weight: 600;
-    }
-    
-    .tags-container {
-      display: flex;
+      align-items: center;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 16px;
+      gap: 12px;
     }
     
-    .tag {
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-    
-    .tag.positive {
-      background: rgba(16, 185, 129, 0.15);
-      color: #059669;
-      border: 1.5px solid #10b981;
-    }
-    
-    .tag.negative {
-      background: rgba(239, 68, 68, 0.15);
-      color: #dc2626;
-      border: 1.5px solid #ef4444;
-    }
-    
-    .screenshot-preview {
-      margin-top: 20px;
-      display: none;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-      animation: fadeIn 0.3s ease;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    
-    .screenshot-preview.active {
-      display: block;
-    }
-    
-    .screenshot-preview img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-    
-    .view-screenshot-btn {
-      display: inline-block;
+    .export-btn {
       padding: 10px 20px;
-      margin-top: 12px;
+      border-radius: 8px;
+      border: none;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      border-radius: 10px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
-      border: none;
-      font-size: 14px;
+      transition: all 0.2s;
     }
     
-    .view-screenshot-btn:hover {
+    .export-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
     
-    .footer {
-      background: #1f2937;
+    .table-container {
+      padding: 30px;
+      overflow-x: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 40px;
+    }
+    
+    th {
+      padding: 16px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    tbody tr {
+      border-bottom: 1px solid #e5e7eb;
+      transition: all 0.2s;
+    }
+    
+    tbody tr:hover {
+      background: #f8f9fa;
+    }
+    
+    td {
+      padding: 16px 12px;
+      font-size: 14px;
+      vertical-align: top;
+    }
+    
+    .url-cell {
+      max-width: 300px;
+      word-break: break-all;
+      font-weight: 500;
+      color: #1f2937;
+    }
+    
+    .date-cell {
+      white-space: nowrap;
+      color: #6b7280;
+      font-size: 13px;
+    }
+    
+    .hash-cell code {
+      background: #f3f4f6;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #374151;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .score-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    
+    .score-badge.low { background: #d1fae5; color: #065f46; }
+    .score-badge.medium { background: #fef3c7; color: #92400e; }
+    .score-badge.high { background: #fee2e2; color: #991b1b; }
+    
+    .verdict-cell {
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .result-row.low { border-left: 4px solid #10b981; }
+    .result-row.medium { border-left: 4px solid #f59e0b; }
+    .result-row.high { border-left: 4px solid #ef4444; }
+    
+    .view-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #667eea;
+      background: white;
+      color: #667eea;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 12px;
+    }
+    
+    .view-btn:hover {
+      background: #667eea;
+      color: white;
+    }
+    
+    .screenshot-modal {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+    }
+    
+    .pos-count {
+      color: #10b981;
+      font-weight: 600;
+      background: #d1fae5;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    
+    .neg-count {
+      color: #ef4444;
+      font-weight: 600;
+      background: #fee2e2;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    
+    .na {
+      color: #9ca3af;
+      font-style: italic;
+    }
+    
+    .footer {
       text-align: center;
+      padding: 30px;
+      background: #f8f9fa;
+      color: #6b7280;
+      border-top: 2px solid #e5e7eb;
     }
     
     .footer h3 {
-      font-size: 24px;
-      margin-bottom: 16px;
-    }
-    
-    .footer p {
-      opacity: 0.8;
+      color: #374151;
       margin-bottom: 8px;
     }
     
+    @media (max-width: 1200px) {
+      table {
+        font-size: 13px;
+      }
+      th, td {
+        padding: 12px 8px;
+      }
+    }
+    
     @media print {
-      body { background: white; padding: 0; }
-      .export-bar { display: none; }
-      .screenshot-preview { display: none !important; }
+      body {
+        background: white;
+        padding: 0;
+      }
+      .export-bar, .view-btn {
+        display: none;
+      }
+      .screenshot-modal {
+        display: block !important;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- Info Banner -->
-  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px; text-align: center; font-size: 14px; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-    📁 This HTML report is saved in <strong>Downloads/scamometer_reports/</strong> folder alongside the screenshots. 
-    Screenshots use relative paths and will display when the HTML is opened from that location.
-  </div>
-  
   <div class="container">
     <div class="header">
       <div class="header-content">
         <h1>🧪 Scamometer Batch Analysis Report</h1>
-        <p>Generated on ${new Date().toLocaleString()} • ${batchResults.length} URLs Analyzed</p>
+        <p>Generated on ${new Date().toLocaleString()}</p>
+      </div>
+    </div>
+    
+    <div class="summary-cards">
+      <div class="card total">
+        <div class="card-value">${batchResults.length}</div>
+        <div class="card-label">Total URLs</div>
+      </div>
+      <div class="card success">
+        <div class="card-value">${completed.length}</div>
+        <div class="card-label">Completed</div>
+      </div>
+      <div class="card failed">
+        <div class="card-value">${failed.length}</div>
+        <div class="card-label">Failed</div>
+      </div>
+      <div class="card avg">
+        <div class="card-value">${avgScore}</div>
+        <div class="card-label">Avg Risk Score</div>
       </div>
     </div>
     
     <div class="export-bar">
-      <div style="font-weight: 600; color: #374151;">Interactive Report • Click "View Screenshot" to see captured images</div>
-      <button class="export-btn" onclick="exportToJSON()">📥 Export as JSON</button>
+      <div>
+        <strong>Risk Distribution:</strong>
+        <span style="color:#10b981; margin-left:12px;">● Low: ${lowRisk}</span>
+        <span style="color:#f59e0b; margin-left:12px;">● Medium: ${mediumRisk}</span>
+        <span style="color:#ef4444; margin-left:12px;">● High: ${highRisk}</span>
+      </div>
+      <button class="export-btn" onclick="exportAsJSON()">📥 Export as JSON</button>
     </div>
     
-    <div class="stats-container">
-      <div class="stat-card">
-        <div class="stat-value">${batchResults.length}</div>
-        <div class="stat-label">Total URLs</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${completed.length}</div>
-        <div class="stat-label">Successful</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${failed.length}</div>
-        <div class="stat-label">Failed</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${avgScore}</div>
-        <div class="stat-label">Avg Risk Score</div>
-      </div>
-    </div>
-    
-    <div class="chart-section">
-      <div class="section-title">📊 Risk Distribution</div>
-      <div class="bar-chart">
-        <div class="bar-wrapper">
-          <div class="bar-value">${lowRisk}</div>
-          <div class="bar-column" style="height: ${lowRisk > 0 ? (lowRisk / Math.max(lowRisk, mediumRisk, highRisk, 1) * 100) : 0}%;"></div>
-          <div class="bar-label">Low Risk</div>
-        </div>
-        <div class="bar-wrapper">
-          <div class="bar-value">${mediumRisk}</div>
-          <div class="bar-column" style="height: ${mediumRisk > 0 ? (mediumRisk / Math.max(lowRisk, mediumRisk, highRisk, 1) * 100) : 0}%;"></div>
-          <div class="bar-label">Medium Risk</div>
-        </div>
-        <div class="bar-wrapper">
-          <div class="bar-value">${highRisk}</div>
-          <div class="bar-column" style="height: ${highRisk > 0 ? (highRisk / Math.max(lowRisk, mediumRisk, highRisk, 1) * 100) : 0}%;"></div>
-          <div class="bar-label">High Risk</div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="results-section">
-      <div class="section-title">📋 Detailed Analysis Results</div>
-      ${resultsWithScreenshots.map((result, index) => {
-        const score = result.result?.ai?.scamometer || 0;
-        const scoreClass = score >= 75 ? 'high' : (score >= 40 ? 'medium' : 'low');
-        const positives = result.result?.ai?.positives || [];
-        const negatives = result.result?.ai?.negatives || [];
-        
-        return `
-          <div class="result-card ${scoreClass}" id="result-${index}">
-            <div class="result-header">
-              <div class="result-info">
-                <div class="result-url">${escapeHtml(result.url)}</div>
-                ${result.status === 'completed' ? `
-                  <div class="result-details">
-                    <strong>Verdict:</strong> ${escapeHtml(result.result?.ai?.verdict || 'N/A')}<br>
-                    <strong>Analysis:</strong> ${escapeHtml(result.result?.ai?.reason || 'N/A')}
-                  </div>
-                  ${positives.length > 0 || negatives.length > 0 ? `
-                    <div class="tags-container">
-                      ${positives.map(p => `<span class="tag positive">✓ ${escapeHtml(p)}</span>`).join('')}
-                      ${negatives.map(n => `<span class="tag negative">✗ ${escapeHtml(n)}</span>`).join('')}
-                    </div>
-                  ` : ''}
-                ` : `
-                  <div class="result-details">
-                    <strong>Status:</strong> ${escapeHtml(result.status)}<br>
-                    ${result.error ? `<strong>Error:</strong> ${escapeHtml(result.error)}` : ''}
-                  </div>
-                `}
-                ${result.screenshotFilename ? `
-                  <button class="view-screenshot-btn" onclick="toggleScreenshot(${index})">
-                    👁️ View Screenshot
-                  </button>
-                ` : ''}
-              </div>
-              <div class="result-score ${scoreClass}">${Math.round(score)}<span style="font-size: 24px;">/100</span></div>
-            </div>
-            ${result.screenshotFilename ? `
-              <div class="screenshot-preview" id="screenshot-${index}">
-                <img src="./${result.screenshotFilename}" alt="Screenshot of ${escapeHtml(result.url)}" 
-                     onerror="this.parentElement.innerHTML='<p style=\\"padding:20px;text-align:center;color:#999;\\">Screenshot not found. Make sure this HTML file is in the Downloads/scamometer_reports/ folder with the screenshots.</p>'">
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join('')}
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Date/Time</th>
+            <th>Screenshot</th>
+            <th>SHA-256</th>
+            <th>Score</th>
+            <th>Verdict</th>
+            <th>Positives</th>
+            <th>Negatives</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
     </div>
     
     <div class="footer">
       <h3>🧪 Scamometer</h3>
       <p>AI-Powered Phishing & Scam Detector</p>
-      <p>https://github.com/NoCodeNode/Scamometer-Next</p>
-      <p style="margin-top: 20px; font-size: 14px;">Built by Arnab Mandal • hello@arnabmandal.com</p>
+      <p style="margin-top:8px; font-size:12px;">
+        Built by Arnab Mandal | 
+        <a href="https://github.com/NoCodeNode/Scamometer-Next" style="color:#667eea;">GitHub</a>
+      </p>
     </div>
   </div>
   
   <script>
-    // Store data for JSON export
-    const reportData = ${JSON.stringify({
-      generated: new Date().toISOString(),
-      total: batchResults.length,
-      completed: completed.length,
-      failed: failed.length,
-      avgScore: avgScore,
-      results: batchResults.map(r => ({
-        url: r.url,
-        status: r.status,
-        score: r.result?.ai?.scamometer || 0,
-        verdict: r.result?.ai?.verdict || null,
-        reason: r.result?.ai?.reason || null,
-        positives: r.result?.ai?.positives || [],
-        negatives: r.result?.ai?.negatives || [],
-        error: r.error || null,
-        screenshot: r.screenshot ? {
-          filename: r.screenshot.filename,
-          timestamp: r.screenshot.timestamp,
-          hash: r.screenshot.hash
-        } : null
-      }))
-    })};
-    
     function toggleScreenshot(index) {
-      const preview = document.getElementById(\`screenshot-\${index}\`);
-      const allPreviews = document.querySelectorAll('.screenshot-preview');
-      
-      // Close all other previews
-      allPreviews.forEach((p, i) => {
-        if (i !== index) p.classList.remove('active');
-      });
-      
-      // Toggle current preview
-      preview.classList.toggle('active');
-      
-      // Scroll into view
-      if (preview.classList.contains('active')) {
-        preview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const modal = document.getElementById('screenshot-' + index);
+      if (modal.style.display === 'none') {
+        // Hide all other screenshots
+        document.querySelectorAll('.screenshot-modal').forEach(m => m.style.display = 'none');
+        modal.style.display = 'block';
+      } else {
+        modal.style.display = 'none';
       }
     }
     
-    function exportToJSON() {
-      const dataStr = JSON.stringify(reportData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = \`scamometer-report-\${Date.now()}.json\`;
-      link.click();
+    function exportAsJSON() {
+      const data = ${JSON.stringify({
+        generated: new Date().toISOString(),
+        total: batchResults.length,
+        completed: completed.length,
+        failed: failed.length,
+        avgScore: avgScore,
+        results: batchResults
+      })};
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'scamometer-report-' + Date.now() + '.json';
+      a.click();
       URL.revokeObjectURL(url);
     }
-    
-    // Add hover effect to result cards
-    document.querySelectorAll('.result-card').forEach(card => {
-      card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateX(8px) scale(1.01)';
-      });
-      card.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateX(0) scale(1)';
-      });
-    });
   </script>
 </body>
 </html>`;
 }
-
 function generateDetailReport(result) {
   const score = result.result?.ai?.scamometer || 0;
   const scoreClass = score >= 75 ? 'high' : (score >= 40 ? 'medium' : 'low');
