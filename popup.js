@@ -84,6 +84,9 @@ function showDisabledState() {
 async function refresh() {
   const { apiKey } = await chrome.storage.local.get({ apiKey: null });
   
+  // Always show nav menu
+  document.getElementById('navMenu').style.display = 'block';
+  
   // Check API key
   if (!apiKey) {
     document.getElementById('needKey').style.display = 'block';
@@ -97,6 +100,10 @@ async function refresh() {
   const tab = await getActiveTab();
   if (!tab || !tab.url || tab.url.startsWith('chrome://')) {
     showToast('Cannot analyze Chrome internal pages', true);
+    document.getElementById('needKey').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('disabledState').style.display = 'none';
     return;
   }
   
@@ -135,6 +142,14 @@ function displayResults(data) {
   document.getElementById('disabledState').style.display = 'none';
   
   currentAnalysisData = data;
+  
+  // Update badge
+  if (data.ai?.scamometer !== undefined) {
+    chrome.runtime.sendMessage({ 
+      type: 'SET_BADGE', 
+      score: data.ai.scamometer 
+    }).catch(() => {});
+  }
   
   const score = data.ai?.scamometer ?? 0;
   const verdict = data.ai?.verdict || '—';
