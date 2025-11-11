@@ -2,11 +2,16 @@
 
 // background.js — updated v2.0 (best-in-class features)
 
+// Import webhook functionality
+import { sendWebhookNotification, registerWebhookListener } from './webhook.js';
+
 // Show welcome page on first install
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
   }
+  // Register webhook listener
+  registerWebhookListener();
 });
 const SCAM_THRESHOLD = 70;
 const DNS_TYPES = ['A','AAAA','CNAME','MX','NS','TXT','SOA','SRV','DNSKEY','DS','CAA'];
@@ -497,6 +502,20 @@ async function processNextBatchUrl() {
     await chrome.storage.local.set({ 'batch::queue': queue });
     await updateBatchStatus('completed', queue.urls.length, queue.urls.length);
     batchProcessingActive = false;
+    
+    // Send webhook notification
+    try {
+      const results = {
+        total: queue.urls.length,
+        completed: queue.urls.filter(u => u.status === 'completed').length,
+        failed: queue.urls.filter(u => u.status === 'failed').length,
+        pending: queue.urls.filter(u => u.status === 'pending').length,
+        results: queue.urls
+      };
+      await sendWebhookNotification(results);
+    } catch (e) {
+      console.error('Webhook notification failed:', e);
+    }
     
     // Notify popup
     try {
