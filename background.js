@@ -605,6 +605,27 @@ async function processNextBatchUrl() {
     nextUrl.screenshot = screenshot;
     await chrome.storage.local.set({ 'batch::queue': queue });
     
+    // Send individual webhook notification for this URL
+    try {
+      const { webhookEnabled = false } = await chrome.storage.local.get({ webhookEnabled: false });
+      if (webhookEnabled) {
+        await sendWebhookNotification({
+          total: 1,
+          completed: 1,
+          failed: 0,
+          pending: 0,
+          results: [{
+            url: nextUrl.url,
+            status: 'completed',
+            result: result,
+            screenshot: screenshot
+          }]
+        });
+      }
+    } catch (e) {
+      console.error('Individual webhook notification failed:', e);
+    }
+    
     // Close window (not just tab)
     await chrome.windows.remove(batchWindowId);
     batchTabId = null;

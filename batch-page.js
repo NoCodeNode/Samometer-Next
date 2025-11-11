@@ -262,12 +262,6 @@ function renderResultsTable() {
         <td title="${escapeHtml(result.url)}">${escapeHtml(hostname)}</td>
         <td><span class="score-badge ${scoreClass}">${Math.round(score)}/100</span></td>
         <td>${statusBadge}</td>
-        <td>
-          <div class="action-buttons">
-            <button class="btn-small" onclick="viewResult(${index})">👁️ View</button>
-            <button class="btn-small" onclick="downloadIndividualReport(${index})">💾 Download</button>
-          </div>
-        </td>
       </tr>
     `;
   }).join('');

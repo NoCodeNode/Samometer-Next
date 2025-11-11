@@ -70,7 +70,7 @@ async function loadAnalytics() {
   let totalScore = 0;
   
   reports.forEach(report => {
-    const score = report.result?.score || 0;
+    const score = report.result?.ai?.scamometer || 0;
     totalScore += score;
     
     if (score < 30) analyticsData.lowRisk++;

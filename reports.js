@@ -117,7 +117,7 @@ function filterReports() {
     if (currentFilter === 'single' && report.type !== 'single') return false;
     
     // Risk filter
-    const score = report.result?.score || 0;
+    const score = report.result?.ai?.scamometer || 0;
     if (currentFilter === 'low' && score >= 30) return false;
     if (currentFilter === 'medium' && (score < 30 || score >= 70)) return false;
     if (currentFilter === 'high' && score < 70) return false;
@@ -140,28 +140,29 @@ function renderReports() {
   
   empty.style.display = 'none';
   
+  // Simple clean UI: Just URL and score with gradient
   grid.innerHTML = filteredReports.map((report, index) => {
-    const score = report.result?.score || 0;
+    const score = report.result?.ai?.scamometer || 0;
     const riskLevel = score < 30 ? 'low' : score < 70 ? 'medium' : 'high';
-    const verdict = report.result?.verdict || 'Unknown';
-    const date = new Date(report.timestamp).toLocaleString();
+    
+    // Calculate gradient based on score (green to yellow to red)
+    let gradientColor;
+    if (score < 30) {
+      // Green for low risk
+      gradientColor = `linear-gradient(90deg, rgba(22, 163, 74, 0.3), rgba(22, 163, 74, 0.1))`;
+    } else if (score < 70) {
+      // Yellow for medium risk
+      gradientColor = `linear-gradient(90deg, rgba(234, 179, 8, 0.3), rgba(234, 179, 8, 0.1))`;
+    } else {
+      // Red for high risk
+      gradientColor = `linear-gradient(90deg, rgba(220, 38, 38, 0.3), rgba(220, 38, 38, 0.1))`;
+    }
     
     return `
-      <div class="result-card">
+      <div class="result-card" style="background: ${gradientColor}; border-left: 4px solid ${riskLevel === 'low' ? 'var(--green)' : riskLevel === 'medium' ? 'var(--yellow)' : 'var(--red)'};">
         <div class="result-header">
           <div class="result-url">${escapeHtml(report.url)}</div>
-          <div class="score-badge ${riskLevel}">${score}/100</div>
-        </div>
-        <div class="result-meta">
-          <div style="margin-bottom: 4px;"><strong>${escapeHtml(verdict)}</strong></div>
-          <div>${date}</div>
-          <div style="margin-top: 4px;">Type: ${report.type === 'batch' ? '📦 Batch' : '🔍 Single'}</div>
-        </div>
-        <div class="result-actions">
-          <button class="btn-small primary" onclick="viewReport(${index})">👁️ View</button>
-          <button class="btn-small" onclick="downloadHtml(${index})">📊 HTML</button>
-          <button class="btn-small" onclick="downloadJson(${index})">📥 JSON</button>
-          <button class="btn-small danger" onclick="deleteReport(${index})">🗑️</button>
+          <div class="score-badge ${riskLevel}">${Math.round(score)}/100</div>
         </div>
       </div>
     `;
