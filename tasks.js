@@ -20,6 +20,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function setupEventListeners() {
   document.getElementById('clearCompleted').addEventListener('click', clearCompleted);
+  
+  // Navigation buttons
+  document.getElementById('navReports')?.addEventListener('click', () => location.href = 'reports.html');
+  document.getElementById('navBatch')?.addEventListener('click', () => location.href = 'batch.html');
+  document.getElementById('navAnalytics')?.addEventListener('click', () => location.href = 'analytics.html');
+  document.getElementById('navSettings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
 }
 
 async function loadTasks() {
@@ -66,6 +72,10 @@ function renderActiveTask() {
   
   empty.style.display = 'none';
   
+  // Remove old event listeners by cloning container
+  const newContainer = container.cloneNode(false);
+  container.parentNode.replaceChild(newContainer, container);
+  
   const completed = currentTask.urls.filter(u => u.status === 'completed').length;
   const failed = currentTask.urls.filter(u => u.status === 'failed').length;
   const percentage = currentTask.total > 0 ? Math.round((completed / currentTask.total) * 100) : 0;
@@ -74,7 +84,8 @@ function renderActiveTask() {
   const statusText = currentTask.status === 'processing' ? 'Processing' : currentTask.status === 'paused' ? 'Paused' : 'Completed';
   const statusClass = currentTask.status === 'processing' ? 'processing' : currentTask.status === 'paused' ? 'paused' : 'completed';
   
-  container.innerHTML = `
+  newContainer.id = 'activeTasks';
+  newContainer.innerHTML = `
     <div class="task-card">
       <div class="task-header">
         <div class="task-title">🔄 Batch Analysis</div>
@@ -97,13 +108,22 @@ function renderActiveTask() {
       </div>
       
       <div class="task-actions">
-        ${currentTask.status === 'processing' ? '<button onclick="pauseTask()">⏸️ Pause</button>' : ''}
-        ${currentTask.status === 'paused' ? '<button class="primary" onclick="resumeTask()">▶️ Resume</button>' : ''}
-        <button onclick="viewBatchPage()">👁️ View Details</button>
-        ${currentTask.status !== 'processing' ? '<button class="danger" onclick="cancelTask()">❌ Cancel Task</button>' : ''}
+        ${currentTask.status === 'processing' ? '<button class="btn-pause" data-action="pause">⏸️ Pause</button>' : ''}
+        ${currentTask.status === 'paused' ? '<button class="primary btn-resume" data-action="resume">▶️ Resume</button>' : ''}
+        <button class="btn-view" data-action="view">👁️ View Details</button>
+        ${currentTask.status !== 'processing' ? '<button class="danger btn-cancel" data-action="cancel">❌ Cancel Task</button>' : ''}
       </div>
     </div>
   `;
+  
+  // Add event listeners to buttons
+  newContainer.querySelectorAll('[data-action]').forEach(btn => {
+    const action = btn.dataset.action;
+    if (action === 'pause') btn.addEventListener('click', pauseTask);
+    else if (action === 'resume') btn.addEventListener('click', resumeTask);
+    else if (action === 'view') btn.addEventListener('click', viewBatchPage);
+    else if (action === 'cancel') btn.addEventListener('click', cancelTask);
+  });
 }
 
 function renderCompletedTasks() {

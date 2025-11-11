@@ -31,6 +31,12 @@ function setupEventListeners() {
   document.getElementById('exportAllHtml').addEventListener('click', exportAllAsHtml);
   document.getElementById('exportAllJson').addEventListener('click', exportAllAsJson);
   document.getElementById('clearAllReports').addEventListener('click', clearAllReports);
+  
+  // Navigation buttons
+  document.getElementById('navBatch')?.addEventListener('click', () => location.href = 'batch.html');
+  document.getElementById('navTasks')?.addEventListener('click', () => location.href = 'tasks.html');
+  document.getElementById('navAnalytics')?.addEventListener('click', () => location.href = 'analytics.html');
+  document.getElementById('navSettings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
 }
 
 async function loadReports() {

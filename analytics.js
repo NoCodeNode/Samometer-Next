@@ -20,6 +20,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupEventListeners() {
   document.getElementById('exportAnalytics').addEventListener('click', exportAnalyticsReport);
   document.getElementById('exportJson').addEventListener('click', exportAsJson);
+  
+  // Navigation buttons
+  document.getElementById('navReports')?.addEventListener('click', () => location.href = 'reports.html');
+  document.getElementById('navBatch')?.addEventListener('click', () => location.href = 'batch.html');
+  document.getElementById('navTasks')?.addEventListener('click', () => location.href = 'tasks.html');
+  document.getElementById('navSettings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
 }
 
 async function loadAnalytics() {
